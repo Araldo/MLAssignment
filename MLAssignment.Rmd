@@ -1,0 +1,97 @@
+---
+title: "Weight Lifting analysis"
+author: "A. van de Kraats"
+date: "11 September 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summary
+
+Sensor data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants are used in the analysis. The participants were asked to perform barbell lifts correctly and incorrectly in 5 different ways. From the sensor data we will fit a random forest model and predict 20 test cases.
+
+## Reading Data
+
+```{r}
+#setwd("C:\\Users\\Araldo\\Git\\datasciencecoursera\\MLAssignment")
+if(!file.exists("training.csv"))
+{
+    trainingUrl<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+    testingUrl<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+    download.file(trainingUrl, "training.csv")
+    download.file(testingUrl, "testing.csv")
+}
+training.raw<-read.csv("training.csv")
+testing.raw<-read.csv("testing.csv")
+```
+
+## Exploratory data analysis
+
+```{r, results='hide'}
+head(training.raw)
+```
+```{r}
+View(training.raw)
+View(testing.raw)
+```
+The columns with indices and timestamps (column numbers 1,3,4,5,6,7) are not of interest for the prediction and we will get rid of them first. Furthermore, many of the variables contain many Na's. Especially the variables in the test set that consists purely of NA's are not useful for prediction and will be stripped from both the test en training set.
+```{r}
+training.raw<-read.csv("training.csv")
+testing.raw<-read.csv("testing.csv")
+library(dplyr, verbose=FALSE, warn.conflicts=FALSE, quietly=TRUE)
+training.raw<-cbind(training.raw[,2:2], training.raw[,8:length(training.raw[1,])])
+names(training.raw)[1]<-"username"
+testing.raw<-cbind(testing.raw[,2:2], testing.raw[,8:length(testing.raw[1,])])
+names(testing.raw)[1]<-"username"
+
+selectedVariables<-names(testing.raw)[!is.na(testing.raw[1,])] #get names in test set with no NA's in the first row
+for(i in 1:length(selectedVariables)) #loop over the resulting names
+{
+    columnTrain<-training.raw[[selectedVariables[i]]] #get the according columns from the training and test set
+    columnTest<-testing.raw[[selectedVariables[i]]]
+    if (i==1) 
+    {
+        training<-data.frame(columnTrain) #initialize the dataframe with the first selected columns
+        testing<-data.frame(columnTest)
+    }
+    else
+    {
+        if(!is.null(columnTrain)) #add additional columns if the name selected from the test set also exists in the training set
+        {
+            training<-cbind(training, columnTrain)
+            testing<-cbind(testing, columnTest)
+            names(training)[length(training[1,])]<-selectedVariables[i] #give the columns back their original names
+            names(testing)[length(testing[1,])]<-selectedVariables[i]
+        }
+    }
+}
+training<-cbind(training,training.raw[["classe"]]) #add the classe to the training set.
+names(training)[length(training[1,])]<-"classe"
+remove(testing.raw, training.raw, columnTrain, columnTest, selectedVariables) #Cleanup unused stuff
+c(sum(is.na(testing)), sum(is.na(training))) #check all NA's are gone from the stripped datasets
+```
+
+## Fitting a random forrest
+For classification problems random forest models often work quite good and will be our first default choice. We will use 10-fold cross-validation on 100% of the training data. With 10 fold cross validation the training time is increased to 10 times that of a single RF-model (but it still trains in a reasonable time < 1 hour), and we 'waste' only 10% of the data. Also, a fold of 5 or 10 is a common often used choice, which has proven to work well in practice.
+
+Since we use cross-validation, we do not need a test set to asses the out-of-sample accuracy. The confusion matrix will be printed to see how the model performs. Also the random forest method does not need pre-processing for it to work well.
+
+```{r}
+library(caret, verbose=FALSE, warn.conflicts=FALSE, quietly=TRUE)
+#InTrain<-createDataPartition(y=training$classe,p=0.01,list=FALSE) #used to try out the flow, for fast speed.
+#training<-training[InTrain,]
+rf_model<-train(classe~.,data=training,method="rf", trControl=trainControl(method="cv",number=10))
+train.predict<-predict(rf_model, training)
+confusionMatrix(training$classe, train.predict)
+```
+The model achieves a 100% accuracy with 10-fold cross validation! We therefore predict he out-of-sample rate will be close to 100% as well and we decide we do not have to look any further.
+
+## Making predictions for submission
+```{r}
+names(testing)[1]<-"columnTrain"
+test.predict<-predict(rf_model, testing)
+test.predict
+```
