@@ -145,7 +145,7 @@ testing.raw&lt;-read.csv(&quot;testing.csv&quot;)</code></pre>
 <pre class="r"><code>head(training.raw)</code></pre>
 <pre class="r"><code>View(training.raw)
 View(testing.raw)</code></pre>
-<p>The columns with indices, timestamps, (column numbers 1,3,4,5,6,7) are not of interest for the prediction and we will get rid of them first. Furthermore, many of the variables contain many Na’s. Especially the variables in the test set that consists purely of NA’s are not useful for prediction and will be stripped from both the test en training set.</p>
+<p>The columns with indices and timestamps (column numbers 1,3,4,5,6,7) are not of interest for the prediction and we will get rid of them first. Furthermore, many of the variables contain many Na’s. Especially the variables in the test set that consists purely of NA’s are not useful for prediction and will be stripped from both the test en training set.</p>
 <pre class="r"><code>training.raw&lt;-read.csv(&quot;training.csv&quot;)
 testing.raw&lt;-read.csv(&quot;testing.csv&quot;)
 library(dplyr, verbose=FALSE, warn.conflicts=FALSE, quietly=TRUE)
@@ -186,9 +186,8 @@ c(sum(is.na(testing)), sum(is.na(training))) #check all NA's are gone from the s
 <p>For classification problems random forest models often work quite good and will be our first default choice. We will use 10-fold cross-validation on 100% of the training data. With 10 fold cross validation the training time is increased to 10 times that of a single RF-model (but it still trains in a reasonable time &lt; 1 hour), and we ‘waste’ only 10% of the data. Also, a fold of 5 or 10 is a common often used choice, which has proven to work well in practice.</p>
 <p>Since we use cross-validation, we do not need a test set to asses the out-of-sample accuracy. The confusion matrix will be printed to see how the model performs. Also the random forest method does not need pre-processing for it to work well.</p>
 <pre class="r"><code>library(caret, verbose=FALSE, warn.conflicts=FALSE, quietly=TRUE)
-InTrain&lt;-createDataPartition(y=training$classe,p=0.01,list=FALSE) #used to try out the flow, for fast speed.
-training1&lt;-training[InTrain,]
-training&lt;-training1
+#InTrain&lt;-createDataPartition(y=training$classe,p=0.01,list=FALSE) #used to try out the flow, for fast speed.
+#training&lt;-training[InTrain,]
 rf_model&lt;-train(classe~.,data=training,method=&quot;rf&quot;, trControl=trainControl(method=&quot;cv&quot;,number=10))</code></pre>
 <pre><code>## Loading required package: randomForest</code></pre>
 <pre><code>## randomForest 4.6-12</code></pre>
@@ -206,18 +205,18 @@ confusionMatrix(training$classe, train.predict)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
-## Prediction  A  B  C  D  E
-##          A 56  0  0  0  0
-##          B  0 38  0  0  0
-##          C  0  0 35  0  0
-##          D  0  0  0 33  0
-##          E  0  0  0  0 37
+## Prediction    A    B    C    D    E
+##          A 5580    0    0    0    0
+##          B    0 3797    0    0    0
+##          C    0    0 3422    0    0
+##          D    0    0    0 3216    0
+##          E    0    0    0    0 3607
 ## 
 ## Overall Statistics
 ##                                      
 ##                Accuracy : 1          
-##                  95% CI : (0.9816, 1)
-##     No Information Rate : 0.2814     
+##                  95% CI : (0.9998, 1)
+##     No Information Rate : 0.2844     
 ##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16  
 ##                                      
 ##                   Kappa : 1          
@@ -226,14 +225,14 @@ confusionMatrix(training$classe, train.predict)</code></pre>
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            1.0000    1.000   1.0000   1.0000   1.0000
-## Specificity            1.0000    1.000   1.0000   1.0000   1.0000
-## Pos Pred Value         1.0000    1.000   1.0000   1.0000   1.0000
-## Neg Pred Value         1.0000    1.000   1.0000   1.0000   1.0000
-## Prevalence             0.2814    0.191   0.1759   0.1658   0.1859
-## Detection Rate         0.2814    0.191   0.1759   0.1658   0.1859
-## Detection Prevalence   0.2814    0.191   0.1759   0.1658   0.1859
-## Balanced Accuracy      1.0000    1.000   1.0000   1.0000   1.0000</code></pre>
+## Sensitivity            1.0000   1.0000   1.0000   1.0000   1.0000
+## Specificity            1.0000   1.0000   1.0000   1.0000   1.0000
+## Pos Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
+## Neg Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
+## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
+## Detection Rate         0.2844   0.1935   0.1744   0.1639   0.1838
+## Detection Prevalence   0.2844   0.1935   0.1744   0.1639   0.1838
+## Balanced Accuracy      1.0000   1.0000   1.0000   1.0000   1.0000</code></pre>
 <p>The model achieves a 100% accuracy with 10-fold cross validation! We therefore predict he out-of-sample rate will be close to 100% as well and we decide we do not have to look any further.</p>
 </div>
 <div id="making-predictions-for-submission" class="section level2">
@@ -241,7 +240,7 @@ confusionMatrix(training$classe, train.predict)</code></pre>
 <pre class="r"><code>names(testing)[1]&lt;-&quot;columnTrain&quot;
 test.predict&lt;-predict(rf_model, testing)
 test.predict</code></pre>
-<pre><code>##  [1] C A A A C C C B A A C C B A C D A B A E
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
 </div>
 
