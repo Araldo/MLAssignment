@@ -75,19 +75,20 @@ c(sum(is.na(testing)), sum(is.na(training))) #check all NA's are gone from the s
 ```
 
 ## Fitting a random forrest
-For classification problems random forest models often work quite good and will be our first default choice. We will use 10-fold cross-validation on 100% of the training data. With 10 fold cross validation the training time is increased to 10 times that of a single RF-model (but it still trains in a reasonable time < 1 hour), and we 'waste' only 10% of the data. Also, a fold of 5 or 10 is a common often used choice, which has proven to work well in practice.
+For classification problems random forest models often work quite good and will be our first default choice. We will use 10-fold cross-validation on 80% of the training data. With 10 fold cross validation the training time is increased to 10 times that of a single RF-model (but it still trains in a reasonable time < 1 hour). Also, a fold of 5 or 10 is a common often used choice, which has proven to work well in practice.
 
-Since we use cross-validation, we do not need a test set to asses the out-of-sample accuracy. The confusion matrix will be printed to see how the model performs. Also the random forest method does not need pre-processing for it to work well.
+The random forest method does not need pre-processing for it to work well. To estimate the out of sample error, we use the remaining 20% of the training set as a test set and show the confusionMatrix.
 
-```{r}
+```{r, cache=TRUE}
 library(caret, verbose=FALSE, warn.conflicts=FALSE, quietly=TRUE)
-#InTrain<-createDataPartition(y=training$classe,p=0.01,list=FALSE) #used to try out the flow, for fast speed.
-#training<-training[InTrain,]
-rf_model<-train(classe~.,data=training,method="rf", trControl=trainControl(method="cv",number=10))
-train.predict<-predict(rf_model, training)
-confusionMatrix(training$classe, train.predict)
+InTrain<-createDataPartition(y=training$classe,p=0.8,list=FALSE) #used to try out the flow, for fast speed.
+training.train<-training[InTrain,]
+training.test<-training[-InTrain,]
+rf_model<-train(classe~.,data=training.train,method="rf", trControl=trainControl(method="cv",number=10))
+train.predict<-predict(rf_model, training.test)
+confusionMatrix(training.test$classe, train.predict)
 ```
-The model achieves a 100% accuracy with 10-fold cross validation! We therefore predict he out-of-sample rate will be close to 100% as well and we decide we do not have to look any further.
+The model achieves a 99.13% out-of-sample accuracy with a confidence interval [0.9879, 0.994]. We decide we do not have to look any further for a better model.
 
 ## Making predictions for submission
 ```{r}

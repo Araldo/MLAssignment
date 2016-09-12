@@ -183,12 +183,13 @@ c(sum(is.na(testing)), sum(is.na(training))) #check all NA's are gone from the s
 </div>
 <div id="fitting-a-random-forrest" class="section level2">
 <h2>Fitting a random forrest</h2>
-<p>For classification problems random forest models often work quite good and will be our first default choice. We will use 10-fold cross-validation on 100% of the training data. With 10 fold cross validation the training time is increased to 10 times that of a single RF-model (but it still trains in a reasonable time &lt; 1 hour), and we ‘waste’ only 10% of the data. Also, a fold of 5 or 10 is a common often used choice, which has proven to work well in practice.</p>
-<p>Since we use cross-validation, we do not need a test set to asses the out-of-sample accuracy. The confusion matrix will be printed to see how the model performs. Also the random forest method does not need pre-processing for it to work well.</p>
+<p>For classification problems random forest models often work quite good and will be our first default choice. We will use 10-fold cross-validation on 80% of the training data. With 10 fold cross validation the training time is increased to 10 times that of a single RF-model (but it still trains in a reasonable time &lt; 1 hour). Also, a fold of 5 or 10 is a common often used choice, which has proven to work well in practice.</p>
+<p>The random forest method does not need pre-processing for it to work well. To estimate the out of sample error, we use the remaining 20% of the training set as a test set and show the confusionMatrix.</p>
 <pre class="r"><code>library(caret, verbose=FALSE, warn.conflicts=FALSE, quietly=TRUE)
-#InTrain&lt;-createDataPartition(y=training$classe,p=0.01,list=FALSE) #used to try out the flow, for fast speed.
-#training&lt;-training[InTrain,]
-rf_model&lt;-train(classe~.,data=training,method=&quot;rf&quot;, trControl=trainControl(method=&quot;cv&quot;,number=10))</code></pre>
+InTrain&lt;-createDataPartition(y=training$classe,p=0.8,list=FALSE) #used to try out the flow, for fast speed.
+training.train&lt;-training[InTrain,]
+training.test&lt;-training[-InTrain,]
+rf_model&lt;-train(classe~.,data=training.train,method=&quot;rf&quot;, trControl=trainControl(method=&quot;cv&quot;,number=10))</code></pre>
 <pre><code>## Loading required package: randomForest</code></pre>
 <pre><code>## randomForest 4.6-12</code></pre>
 <pre><code>## Type rfNews() to see new features/changes/bug fixes.</code></pre>
@@ -200,46 +201,54 @@ rf_model&lt;-train(classe~.,data=training,method=&quot;rf&quot;, trControl=train
 <pre><code>## The following object is masked from 'package:dplyr':
 ## 
 ##     combine</code></pre>
-<pre class="r"><code>train.predict&lt;-predict(rf_model, training)
-confusionMatrix(training$classe, train.predict)</code></pre>
+<pre class="r"><code>train.predict&lt;-predict(rf_model, training.test)
+confusionMatrix(training.test$classe, train.predict)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 5580    0    0    0    0
-##          B    0 3797    0    0    0
-##          C    0    0 3422    0    0
-##          D    0    0    0 3216    0
-##          E    0    0    0    0 3607
+##          A 1116    0    0    0    0
+##          B    5  748    5    1    0
+##          C    0    3  673    8    0
+##          D    0    0    7  635    1
+##          E    0    1    1    2  717
 ## 
 ## Overall Statistics
-##                                      
-##                Accuracy : 1          
-##                  95% CI : (0.9998, 1)
-##     No Information Rate : 0.2844     
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16  
-##                                      
-##                   Kappa : 1          
-##  Mcnemar's Test P-Value : NA         
+##                                          
+##                Accuracy : 0.9913         
+##                  95% CI : (0.9879, 0.994)
+##     No Information Rate : 0.2858         
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
+##                                          
+##                   Kappa : 0.989          
+##  Mcnemar's Test P-Value : NA             
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            1.0000   1.0000   1.0000   1.0000   1.0000
-## Specificity            1.0000   1.0000   1.0000   1.0000   1.0000
-## Pos Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
-## Neg Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
-## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2844   0.1935   0.1744   0.1639   0.1838
-## Detection Prevalence   0.2844   0.1935   0.1744   0.1639   0.1838
-## Balanced Accuracy      1.0000   1.0000   1.0000   1.0000   1.0000</code></pre>
-<p>The model achieves a 100% accuracy with 10-fold cross validation! We therefore predict he out-of-sample rate will be close to 100% as well and we decide we do not have to look any further.</p>
+## Sensitivity            0.9955   0.9947   0.9810   0.9830   0.9986
+## Specificity            1.0000   0.9965   0.9966   0.9976   0.9988
+## Pos Pred Value         1.0000   0.9855   0.9839   0.9876   0.9945
+## Neg Pred Value         0.9982   0.9987   0.9960   0.9966   0.9997
+## Prevalence             0.2858   0.1917   0.1749   0.1647   0.1830
+## Detection Rate         0.2845   0.1907   0.1716   0.1619   0.1828
+## Detection Prevalence   0.2845   0.1935   0.1744   0.1639   0.1838
+## Balanced Accuracy      0.9978   0.9956   0.9888   0.9903   0.9987</code></pre>
+<p>The model achieves a 99.13% out-of-sample accuracy with a confidence interval [0.9879, 0.994]. We decide we do not have to look any further for a better model.</p>
 </div>
 <div id="making-predictions-for-submission" class="section level2">
 <h2>Making predictions for submission</h2>
 <pre class="r"><code>names(testing)[1]&lt;-&quot;columnTrain&quot;
-test.predict&lt;-predict(rf_model, testing)
-test.predict</code></pre>
+test.predict&lt;-predict(rf_model, testing)</code></pre>
+<pre><code>## Loading required package: randomForest</code></pre>
+<pre><code>## randomForest 4.6-12</code></pre>
+<pre><code>## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+<pre><code>## 
+## Attaching package: 'randomForest'</code></pre>
+<pre><code>## The following object is masked from 'package:dplyr':
+## 
+##     combine</code></pre>
+<pre class="r"><code>test.predict</code></pre>
 <pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
 </div>
